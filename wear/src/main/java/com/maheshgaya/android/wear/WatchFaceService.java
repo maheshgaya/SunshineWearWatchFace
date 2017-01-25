@@ -103,6 +103,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
         Paint mBackgroundPaint;
         Paint mTextPaint;
         Paint mDayTextPaint;
+        Paint mSeparatorPaint;
 
         boolean mAmbient;
         Calendar mCalendar;
@@ -118,6 +119,8 @@ public class WatchFaceService extends CanvasWatchFaceService {
         float mYOffset;
         float mXPadding;
         float mYPadding;
+        float mYDividerPadding;
+        float mAmPmYOffset;
 
         //Weather variables
         int minTemp;
@@ -145,6 +148,8 @@ public class WatchFaceService extends CanvasWatchFaceService {
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
             mXPadding = resources.getDimension(R.dimen.digital_x_padding);
             mYPadding = resources.getDimension(R.dimen.digital_y_padding);
+            mYDividerPadding = resources.getDimension(R.dimen.digital_y_divide_padding);
+            mAmPmYOffset = resources.getDimension(R.dimen.digital_ampm_offset);
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
@@ -154,6 +159,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
             mDayTextPaint = new Paint();
             mDayTextPaint = createTextPaint(resources.getColor(R.color.digital_off_text));
+
+            mSeparatorPaint = new Paint();
+            mSeparatorPaint = createTextPaint(resources.getColor(R.color.digital_off_text));
+            mSeparatorPaint.setStrokeWidth(1);
 
             mCalendar = Calendar.getInstance();
 
@@ -291,16 +300,11 @@ public class WatchFaceService extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
-            // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
             boolean is24Hour = android.text.format.DateFormat.is24HourFormat(WatchFaceService.this);
 
-//            String text = mAmbient
-//                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
-//                    mCalendar.get(Calendar.MINUTE))
-//                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
-//                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+            //Draw Time
             String timeText;
             float xCoordinates;
             if (is24Hour){
@@ -309,24 +313,28 @@ public class WatchFaceService extends CanvasWatchFaceService {
                 xCoordinates = mXOffset;
             } else {
                 String amPm = mCalendar.get(Calendar.HOUR_OF_DAY) >= 12 ? "PM" : "AM";
-                float yAmPmCoordinates = amPm.equals("PM") ? mYOffset : mYOffset - mYPadding/2;
+                float yAmPmCoordinates = amPm.equals("PM") ? mYOffset : mYOffset - mAmPmYOffset;
                 float xAmPmCoordinates = mXOffset + (mTextPaint.getTextSize() * 2) + mXPadding;
-
-                timeText = String.format(Locale.getDefault(), "%02d:%02d ", mCalendar.get(Calendar.HOUR_OF_DAY),
+                int hour = mCalendar.get(Calendar.HOUR);
+                hour = (hour == 0) ? 12: hour;
+                timeText = String.format(Locale.getDefault(), "%02d:%02d ", hour,
                         mCalendar.get(Calendar.MINUTE));
-
+                Log.d(TAG, "onDraw: " + hour);
                 canvas.drawText(amPm, xAmPmCoordinates, yAmPmCoordinates, mDayTextPaint);
                 xCoordinates = mXOffset - mXPadding;
             }
 
             canvas.drawText(timeText, xCoordinates, mYOffset, mTextPaint);
 
-
-
             //Draw date in this form: FRI, JAN 22 2017
             SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM dd yyyy", Locale.getDefault());
+
             String currentDate = dateFormat.format(mCalendar.getTime()).toUpperCase();
             canvas.drawText(currentDate, mXOffset - mXPadding, mYOffset + mYPadding, mDayTextPaint);
+
+            //Draw a separator
+            float yDividerCoordinates = mYOffset + mYPadding + mYDividerPadding;
+            canvas.drawLine(canvas.getWidth()/2 - 20f, yDividerCoordinates, canvas.getWidth()/2 + 20f, yDividerCoordinates, mSeparatorPaint);
 
         }
 
