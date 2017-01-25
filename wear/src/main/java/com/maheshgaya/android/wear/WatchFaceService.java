@@ -29,16 +29,24 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
 
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEventBuffer;
+
 import java.lang.ref.WeakReference;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -86,7 +94,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine implements
+            DataApi.DataListener{
+        private final String TAG = Engine.class.getSimpleName();
+
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
@@ -95,7 +106,6 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
         boolean mAmbient;
         Calendar mCalendar;
-        SimpleDateFormat mDateFormat = new SimpleDateFormat("EEE, MMM dd yyyy");
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -109,11 +119,16 @@ public class WatchFaceService extends CanvasWatchFaceService {
         float mXPadding;
         float mYPadding;
 
+        //Weather variables
+        int minTemp;
+        int maxTemp;
+
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
          * disable anti-aliasing in ambient mode.
          */
         boolean mLowBitAmbient;
+
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -125,6 +140,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
                     .setShowSystemUiTime(false)
                     .setAcceptsTapEvents(true)
                     .build());
+
             Resources resources = WatchFaceService.this.getResources();
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
             mXPadding = resources.getDimension(R.dimen.digital_x_padding);
@@ -231,7 +247,9 @@ public class WatchFaceService extends CanvasWatchFaceService {
             if (mAmbient != inAmbientMode) {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
-                    mTextPaint.setAntiAlias(!inAmbientMode);
+                    boolean antiAliasing = !inAmbientMode;
+                    mTextPaint.setAntiAlias(antiAliasing);
+                    mDayTextPaint.setAntiAlias(antiAliasing);
                 }
                 invalidate();
             }
@@ -276,17 +294,38 @@ public class WatchFaceService extends CanvasWatchFaceService {
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
+            boolean is24Hour = android.text.format.DateFormat.is24HourFormat(WatchFaceService.this);
 
 //            String text = mAmbient
 //                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
 //                    mCalendar.get(Calendar.MINUTE))
 //                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
 //                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
-            String timeText = String.format("%02d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY),
-                    mCalendar.get(Calendar.MINUTE));
-            canvas.drawText(timeText, mXOffset, mYOffset, mTextPaint);
+            String timeText;
+            float xCoordinates;
+            if (is24Hour){
+                timeText = String.format(Locale.getDefault(), "%02d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY),
+                        mCalendar.get(Calendar.MINUTE));
+                xCoordinates = mXOffset;
+            } else {
+                String amPm = mCalendar.get(Calendar.HOUR_OF_DAY) >= 12 ? "PM" : "AM";
+                float yAmPmCoordinates = amPm.equals("PM") ? mYOffset : mYOffset - mYPadding/2;
+                float xAmPmCoordinates = mXOffset + (mTextPaint.getTextSize() * 2) + mXPadding;
 
-            String currentDate = mDateFormat.format(mCalendar.getTime()).toUpperCase();
+                timeText = String.format(Locale.getDefault(), "%02d:%02d ", mCalendar.get(Calendar.HOUR_OF_DAY),
+                        mCalendar.get(Calendar.MINUTE));
+
+                canvas.drawText(amPm, xAmPmCoordinates, yAmPmCoordinates, mDayTextPaint);
+                xCoordinates = mXOffset - mXPadding;
+            }
+
+            canvas.drawText(timeText, xCoordinates, mYOffset, mTextPaint);
+
+
+
+            //Draw date in this form: FRI, JAN 22 2017
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM dd yyyy", Locale.getDefault());
+            String currentDate = dateFormat.format(mCalendar.getTime()).toUpperCase();
             canvas.drawText(currentDate, mXOffset - mXPadding, mYOffset + mYPadding, mDayTextPaint);
 
         }
@@ -322,5 +361,12 @@ public class WatchFaceService extends CanvasWatchFaceService {
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
         }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+
+        }
+
+
     }
 }
