@@ -38,7 +38,10 @@ import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 
 import java.lang.ref.WeakReference;
@@ -58,6 +61,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
+    private static final String TAG = WatchFaceService.class.getSimpleName();
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
      * displayed in interactive mode.
@@ -73,6 +77,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
     public Engine onCreateEngine() {
         return new Engine();
     }
+
 
     private static class EngineHandler extends Handler {
         private final WeakReference<WatchFaceService.Engine> mWeakReference;
@@ -316,10 +321,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
                 float yAmPmCoordinates = amPm.equals("PM") ? mYOffset : mYOffset - mAmPmYOffset;
                 float xAmPmCoordinates = mXOffset + (mTextPaint.getTextSize() * 2) + mXPadding;
                 int hour = mCalendar.get(Calendar.HOUR);
-                hour = (hour == 0) ? 12: hour;
+                hour = (hour == 0) ? 12: hour; //hour is represented from 0 to 11. (12 o'clock is 0)
                 timeText = String.format(Locale.getDefault(), "%02d:%02d ", hour,
                         mCalendar.get(Calendar.MINUTE));
-                Log.d(TAG, "onDraw: " + hour);
+
                 canvas.drawText(amPm, xAmPmCoordinates, yAmPmCoordinates, mDayTextPaint);
                 xCoordinates = mXOffset - mXPadding;
             }
