@@ -395,7 +395,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
             canvas.drawLine(canvas.getWidth()/2 - 30f, yDividerCoordinates, canvas.getWidth()/2 + 30f, yDividerCoordinates, mSeparatorPaint);
 
             float yTempCoordinates = yDividerCoordinates + (mYPadding * 1.6f);
-            if (minTemp.length() != 0 && maxTemp.length() != 0) {
+            if (minTemp != null && maxTemp != null) {
                 canvas.drawText(maxTemp, mXTempOffset, yTempCoordinates, mMaxTempPaint);
                 canvas.drawText(minTemp , mXTempOffset + (mDayTextPaint.getTextSize() * 2.8f), yTempCoordinates, mMinTempPaint);
             }
