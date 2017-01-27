@@ -3,11 +3,22 @@
     <dimen name="digital_text_size">35dp</dimen>
     <dimen name="digital_text_size_round">45dp</dimen>
     <dimen name="digital_date_text_size">14dp</dimen>
+    <dimen name="digital_temp_text_size">24dp</dimen>
+
     <dimen name="digital_x_offset">50dp</dimen>
-    <dimen name="digital_x_offset_round">25dp</dimen>
+    <dimen name="digital_x_offset_round">64dp</dimen>
     <dimen name="digital_y_offset">65dp</dimen>
+    <dimen name="digital_y_offset_round">95dp</dimen>
+
     <dimen name="digital_x_padding">12dp</dimen>
+    <dimen name="digital_x_padding_round">5dp</dimen>
     <dimen name="digital_y_padding">20dp</dimen>
     <dimen name="digital_ampm_offset">12dp</dimen>
-    <dimen name="digital_y_divide_padding">10dp</dimen>
+
+    <dimen name="digital_y_divide_padding">16dp</dimen>
+
+    <dimen name="digital_temp_offset">75dp</dimen>
+    <dimen name="digital_temp_offset_round">95dp</dimen>
+    <dimen name="digital_x_bitmap_offset">35dp</dimen>
+    <dimen name="digital_x_bitmap_offset_round">55dp</dimen>
 </resources>

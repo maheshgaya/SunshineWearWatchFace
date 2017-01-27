@@ -46,6 +46,7 @@ import com.example.android.sunshine.utilities.SunshineDateUtils;
 import com.example.android.sunshine.utilities.SunshineWeatherUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
@@ -61,8 +62,7 @@ public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor>,
         ForecastAdapter.ForecastAdapterOnClickHandler,
         GoogleApiClient.OnConnectionFailedListener,
-        GoogleApiClient.ConnectionCallbacks,
-        DataApi.DataListener{
+        GoogleApiClient.ConnectionCallbacks{
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -202,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements
                 .addOnConnectionFailedListener(this)
                 .build();
 
+
     }
 
     /**
@@ -289,8 +290,9 @@ public class MainActivity extends AppCompatActivity implements
 
         if (data.moveToFirst()) {
             String friendlyDate = SunshineDateUtils.getFriendlyDateString(getApplicationContext(), data.getLong(INDEX_WEATHER_DATE), false);
-            int max = data.getInt(INDEX_WEATHER_MAX_TEMP);
-            int min = data.getInt(INDEX_WEATHER_MIN_TEMP);
+            String max = SunshineWeatherUtils.formatTemperature(this, data.getDouble(INDEX_WEATHER_MAX_TEMP));
+            String min = SunshineWeatherUtils.formatTemperature(this, data.getDouble(INDEX_WEATHER_MIN_TEMP));
+
             int weatherIconId = data.getInt(INDEX_WEATHER_CONDITION_ID);
             Bitmap bitmap = BitmapFactory.decodeResource(getResources(), SunshineWeatherUtils.getSmallArtResourceIdForWeatherCondition(weatherIconId));
             Asset imageAsset = createAssetFromBitmap(bitmap);
@@ -407,18 +409,25 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     /**
-     * Wearable Items
+     * send Wearable DataItems
+     * @param asset
+     * @param minTemp
+     * @param maxTemp
      */
-    private void sendWeatherWearData(Asset asset, int minTemp, int maxTemp){
+    private void sendWeatherWearData(Asset asset, String minTemp, String maxTemp){
+        Log.d(TAG, "sendWeatherWearData: " + minTemp + " : " + maxTemp);
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(WEATHER_WEAR_PATH);
         putDataMapRequest.getDataMap().putAsset(WEATHER_IMAGE_KEY, asset);
-        putDataMapRequest.getDataMap().putInt(WEATHER_MAX_KEY, maxTemp);
-        putDataMapRequest.getDataMap().putInt(WEATHER_MIN_KEY, minTemp);
+        putDataMapRequest.getDataMap().putString(WEATHER_MAX_KEY, maxTemp);
+        putDataMapRequest.getDataMap().putString(WEATHER_MIN_KEY, minTemp);
         putDataMapRequest.getDataMap().putString(TIME_KEY, Calendar.getInstance().getTime().toString());
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         request.setUrgent();
 
-        Wearable.DataApi.putDataItem(mGoogleApiClient, request)
+        PendingResult<DataApi.DataItemResult> pendingResult =
+                Wearable.DataApi.putDataItem(mGoogleApiClient, request);
+
+        pendingResult
                 .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                     @Override
                     public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
@@ -431,7 +440,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        if (mGoogleApiClient != null) {
+        if (mGoogleApiClient != null && !mResolvingError) {
             mGoogleApiClient.connect();
         }
     }
@@ -439,15 +448,14 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onPause() {
         super.onPause();
-        Wearable.DataApi.removeListener(mGoogleApiClient, this);
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected() && !mResolvingError) {
             mGoogleApiClient.disconnect();
         }
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Wearable.DataApi.addListener(mGoogleApiClient, this);
+        mResolvingError = false;
     }
 
     @Override
@@ -457,6 +465,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.d(TAG, "onConnectionFailed: " + connectionResult.getErrorMessage());
         if (!mResolvingError){
             if (connectionResult.hasResolution()){
                 try{
@@ -465,15 +474,10 @@ public class MainActivity extends AppCompatActivity implements
                 } catch (IntentSender.SendIntentException e){
                     mGoogleApiClient.connect();
                 }
-            } else {
-                Wearable.DataApi.removeListener(mGoogleApiClient, this);
             }
         }
 
     }
 
-    @Override
-    public void onDataChanged(DataEventBuffer dataEventBuffer) {
-        //TODO: when data changed, log it
-    }
+
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.maheshgaya.android.wear">
+    package="com.example.android.sunshine">
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -10,7 +10,7 @@
     <application android:allowBackup="true" android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name" android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
-        <service android:name=".WatchFaceService" android:label="@string/my_digital_name"
+        <service android:name="com.example.android.sunshine.WatchFaceService" android:label="@string/my_digital_name"
             android:permission="android.permission.BIND_WALLPAPER">
             <meta-data android:name="android.service.wallpaper"
                 android:resource="@xml/watch_face" />
@@ -25,9 +25,6 @@
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
             </intent-filter>
 
-        </service>
-
-        <service android:name=".DataListenerService">
             <intent-filter>
                 <!-- listeners receive events that match the action and data filters -->
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
