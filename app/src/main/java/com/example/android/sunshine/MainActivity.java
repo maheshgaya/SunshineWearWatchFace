@@ -70,12 +70,12 @@ public class MainActivity extends AppCompatActivity implements
      * Data Items for Wearables
      */
     //Paths
-    private static final String WEATHER_WEAR_PATH = "/wearweather";
+    public static final String WEATHER_WEAR_PATH = "/wearweather";
     //keys
-    private static final String WEATHER_IMAGE_KEY = "image";
-    private static final String WEATHER_MAX_KEY = "max";
-    private static final String WEATHER_MIN_KEY = "min";
-    private static final String TIME_KEY = "time";
+    public static final String WEATHER_IMAGE_KEY = "image";
+    public static final String WEATHER_MAX_KEY = "max";
+    public static final String WEATHER_MIN_KEY = "min";
+    public static final String TIME_KEY = "time";
 
     private GoogleApiClient mGoogleApiClient;
     private boolean mResolvingError = false;
@@ -300,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private static Asset createAssetFromBitmap(Bitmap bitmap) {
+    public static Asset createAssetFromBitmap(Bitmap bitmap) {
         final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
         return Asset.createFromBytes(byteStream.toByteArray());
