@@ -8,13 +8,30 @@ Weather App with Wear Watch Face
 1. Clone the repository
   
   ```
-  $ git clone https://github.com/maheshgaya/SunshineWearWatchFace.git
+   $ git clone https://github.com/maheshgaya/SunshineWearWatchFace.git
   ```
   
 2. Import the project in Android Studio
 
 
-```
+## Project Description
+[Udacity - Go Ubiquitous]
+### Project Overview
+In this project, you will build a wearable watch face for Sunshine to run on an Android Wear device.
+
+### Why this Project?
+Android Wear is an exciting way to integrate your app more directly into users’ lives. As a new developer, it will be important for you to understand how to perform this integration. This project gives you an opportunity to design a companion app for Sunshine, tying it to a watch face in order to enrich the experience.
+
+### What Will I Learn?
+Through this project, you will:
+
+Understand the fundamentals of Android Wear.
+Design for multiple watch form factors.
+Communicate between a mobile device and a wearable device.
+
+## License
+  
+  ```
    Copyright (2014) Google Inc, (2017) Mahesh Gaya
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,4 +46,4 @@ Weather App with Wear Watch Face
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
+  ```
