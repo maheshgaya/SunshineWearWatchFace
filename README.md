@@ -1,6 +1,9 @@
 # Watch Face for Sunshine Wear 
 Weather App with Wear Watch Face
 
+## Watch Face Preview
+<img src="https://raw.githubusercontent.com/maheshgaya/SunshineWearWatchFace/master/wear/src/main/res/drawable-nodpi/preview_digital.png"/>
+
 ## Using the Source Code
 1. Clone the repository
   
