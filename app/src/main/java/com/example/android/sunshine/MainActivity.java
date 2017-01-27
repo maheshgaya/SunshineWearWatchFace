@@ -288,6 +288,7 @@ public class MainActivity extends AppCompatActivity implements
         mRecyclerView.smoothScrollToPosition(mPosition);
         if (data.getCount() != 0) showWeatherDataView();
 
+        //Take today's data and send that to the wear as dataItems
         if (data.moveToFirst()) {
             String friendlyDate = SunshineDateUtils.getFriendlyDateString(getApplicationContext(), data.getLong(INDEX_WEATHER_DATE), false);
             String max = SunshineWeatherUtils.formatTemperature(this, data.getDouble(INDEX_WEATHER_MAX_TEMP));
@@ -409,7 +410,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     /**
-     * send Wearable DataItems
+     * send Wearable DataItems to the wear
      * @param asset
      * @param minTemp
      * @param maxTemp
@@ -437,6 +438,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
+    /**
+     * connects the GoogleApiClient
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -445,6 +449,9 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    /**
+     * Disconnects the GoogleApiClient
+     */
     @Override
     protected void onPause() {
         super.onPause();
@@ -453,16 +460,28 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    /**
+     * sets the error boolean variable to false
+     * @param bundle
+     */
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         mResolvingError = false;
     }
 
+    /**
+     * Does nothing
+     * @param i
+     */
     @Override
     public void onConnectionSuspended(int i) {
         //does nothing
     }
 
+    /**
+     * Attempts to resolve the issue if there is a solution
+     * @param connectionResult
+     */
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "onConnectionFailed: " + connectionResult.getErrorMessage());

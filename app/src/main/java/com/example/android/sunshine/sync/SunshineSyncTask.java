@@ -65,6 +65,10 @@ public class SunshineSyncTask{
      * @param context Used to access utility methods and the ContentResolver
      */
     synchronized public static void syncWeather(Context context) {
+        /** initializes the GoogleApiClient and connects it,
+         * does not do much on error handling, but just logs it,
+         * as this is mostly done in the background
+         */
         GoogleApiClient googleApiClient = new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -85,6 +89,7 @@ public class SunshineSyncTask{
                     }
                 })
                 .build();
+        /** connects the GoogleApiClient to send dataItems */
         googleApiClient.connect();
 
         Uri forecastQueryUri = WeatherContract.WeatherEntry.CONTENT_URI;
@@ -177,6 +182,7 @@ public class SunshineSyncTask{
                 selection,
                 null,
                 sortOrder);
+        /** reads today's data from the cursor and sends that to the wear as DataItems*/
         try {
             if (cursor.moveToFirst()) {
                 String friendlyDate = SunshineDateUtils.getFriendlyDateString(context, cursor.getLong(MainActivity.INDEX_WEATHER_DATE), false);
@@ -191,6 +197,7 @@ public class SunshineSyncTask{
                 PendingResult<DataApi.DataItemResult> pendingResult =
                         Wearable.DataApi.putDataItem(googleApiClient, request);
 
+                /** logs the status of the dataItems */
                 pendingResult
                         .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                             @Override
@@ -200,14 +207,22 @@ public class SunshineSyncTask{
                         });
             }
         } finally {
-            cursor.close();
+            cursor.close(); //close the cursor to avoid memory leak
         }
+        /** disconnects the GoogleApiClient */
         if (googleApiClient.isConnected() && googleApiClient != null) {
             googleApiClient.disconnect();
         }
 
     }
 
+    /**
+     * Helper method to load the request for Data Items
+     * @param asset
+     * @param minTemp
+     * @param maxTemp
+     * @return
+     */
     private static PutDataRequest sendWeatherWearData( Asset asset, String minTemp, String maxTemp){
         Log.d(TAG, "sendWeatherWearData: " + minTemp + " : " + maxTemp);
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(MainActivity.WEATHER_WEAR_PATH);
