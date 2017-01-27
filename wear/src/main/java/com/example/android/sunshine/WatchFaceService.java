@@ -108,25 +108,41 @@ public class WatchFaceService extends CanvasWatchFaceService {
         }
     }
 
+    /**
+     * This engine draws the text and bitmaps on the watchface
+     */
     private class Engine extends CanvasWatchFaceService.Engine implements
             DataApi.DataListener,
             GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener{
-        private final String TAG = Engine.class.getSimpleName();
-        private final int TIMEOUT_MS = 1000;
 
+        /** For logging purposes */
+        private final String TAG = Engine.class.getSimpleName();
+
+        /** keeps track of the time updates */
         final Handler mUpdateTimeHandler = new EngineHandler(this);
+        /** get the time zone based on the user's location */
         boolean mRegisteredTimeZoneReceiver = false;
+
+        /** Paint to draw the background */
         Paint mBackgroundPaint;
+        /** Paint to draw the time */
         Paint mTextPaint;
+        /** Paint to draw the date */
         Paint mDayTextPaint;
+        /** Paint to draw the divider after the date */
         Paint mSeparatorPaint;
+        /** Paint to draw the minimum temperature */
         Paint mMinTempPaint;
+        /** Paint to draw the maximum temperature */
         Paint mMaxTempPaint;
 
+        /** Keeps track of whether the watch face is in ambient mode or not */
         boolean mAmbient;
+        /** This is used to get the current time and date */
         Calendar mCalendar;
 
+        /** Get the time zone based on user's location */
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -134,6 +150,11 @@ public class WatchFaceService extends CanvasWatchFaceService {
                 invalidate();
             }
         };
+
+        /**
+         * These variables are used for padding and margins for the
+         * texts and bitmaps on the watch face
+         */
         float mXOffset;
         float mYOffset;
         float mXPadding;
@@ -143,9 +164,15 @@ public class WatchFaceService extends CanvasWatchFaceService {
         float mXTempOffset;
         float mXBitmapOffset;
 
+        /** Google Api Client Library is used to retrieve data items from the mobile app */
         GoogleApiClient mGoogleApiClient;
 
-        //Weather conditions
+        /**
+         * Weather conditions
+         * imageBitmaps  holds the weather image
+         * minTemp keeps the minimum temperature
+         * maxTemp keeps the maximum temperature
+         */
         Bitmap imageBitmap;
         String minTemp = "";
         String maxTemp = "";
@@ -159,7 +186,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
         public static final String WEATHER_IMAGE_KEY = "image";
         public static final String WEATHER_MAX_KEY = "max";
         public static final String WEATHER_MIN_KEY = "min";
-        public static final String TIME_KEY = "time";
+        public static final String TIME_KEY = "time"; //this is not used, but get be used for logging purposes
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -168,10 +195,16 @@ public class WatchFaceService extends CanvasWatchFaceService {
         boolean mLowBitAmbient;
 
 
+        /**
+         * initialize, thus allocate memory, for the variables
+         * Define the variables as much as possible to improve efficiency
+         * @param holder
+         */
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            /** This set the default watch face invisible to allow the custom watchface */
             setWatchFaceStyle(new WatchFaceStyle.Builder(WatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
@@ -179,41 +212,54 @@ public class WatchFaceService extends CanvasWatchFaceService {
                     .setAcceptsTapEvents(true)
                     .build());
 
+            /** Initialize the variables based on the dimens declared in res/values/dimens.xml */
             Resources resources = WatchFaceService.this.getResources();
             mYPadding = resources.getDimension(R.dimen.digital_y_padding);
             mYDividerPadding = resources.getDimension(R.dimen.digital_y_divide_padding);
             mAmPmYOffset = resources.getDimension(R.dimen.digital_ampm_offset);
 
+            //The background is blue
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
 
+            //The text paint is white
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            //gray text paint
             mDayTextPaint = new Paint();
             mDayTextPaint = createTextPaint(resources.getColor(R.color.digital_off_text));
 
+            //gray line paint
             mSeparatorPaint = new Paint();
             mSeparatorPaint = createTextPaint(resources.getColor(R.color.digital_off_text));
             mSeparatorPaint.setStrokeWidth(1);
 
+            //gray text paint
             mMinTempPaint = new Paint();
             mMinTempPaint = createTextPaint(resources.getColor(R.color.digital_off_text));
 
+            //white text paint
             mMaxTempPaint = new Paint();
             mMaxTempPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            //get the current time and date
             mCalendar = Calendar.getInstance();
 
+            //initialize GoogleApiClient to get the data items
             mGoogleApiClient = new GoogleApiClient.Builder(WatchFaceService.this)
                     .addApi(Wearable.API)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
-            mGoogleApiClient.connect();
+            mGoogleApiClient.connect(); //makes a connection to the GoogleApiClient
 
         }
 
+        /**
+         * remove any connection to GoogleApiClient to avoid memory leaks
+         * also removes the data Listener
+         */
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
@@ -225,6 +271,11 @@ public class WatchFaceService extends CanvasWatchFaceService {
             super.onDestroy();
         }
 
+        /**
+         * Initializes the paint with the NORMAL_TYPEFACE
+         * @param textColor
+         * @return
+         */
         private Paint createTextPaint(int textColor) {
             Paint paint = new Paint();
             paint.setColor(textColor);
@@ -233,6 +284,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
             return paint;
         }
 
+        /**
+         * Update time zone
+         * @param visible
+         */
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
@@ -252,6 +307,9 @@ public class WatchFaceService extends CanvasWatchFaceService {
             updateTimer();
         }
 
+        /**
+         * register the timezone receiver
+         */
         private void registerReceiver() {
             if (mRegisteredTimeZoneReceiver) {
                 return;
@@ -262,6 +320,9 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
         }
 
+        /**
+         * unregister the time zone receiver
+         */
         private void unregisterReceiver() {
             if (!mRegisteredTimeZoneReceiver) {
                 return;
@@ -270,6 +331,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
             WatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
         }
 
+        /**
+         * Check if the watch is round or normal and assigns the variables accordingly
+         * @param insets
+         */
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
@@ -294,18 +359,29 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
         }
 
+        /**
+         * Check for ambient mode
+         * @param properties
+         */
         @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
         }
 
+        /**
+         * Update Layout every second
+         */
         @Override
         public void onTimeTick() {
             super.onTimeTick();
             invalidate();
         }
 
+        /**
+         * changes the anti-aliasing for the texts to save battery life
+         * @param inAmbientMode
+         */
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
@@ -341,14 +417,16 @@ public class WatchFaceService extends CanvasWatchFaceService {
                     break;
                 case TAP_TYPE_TAP:
                     // The user has completed the tap gesture.
-                    // TODO: Add code to handle the tap gesture.
-                    Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT)
-                            .show();
                     break;
             }
             invalidate();
         }
 
+        /**
+         * Draws the bitmap and text on the screen
+         * @param canvas
+         * @param bounds
+         */
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             // Draw the background.
@@ -362,7 +440,7 @@ public class WatchFaceService extends CanvasWatchFaceService {
             mCalendar.setTimeInMillis(now);
             boolean is24Hour = android.text.format.DateFormat.is24HourFormat(WatchFaceService.this);
 
-            //Draw Time
+            //Draw Time, checks if user's setting is 24hour or not
             String timeText;
             float xCoordinates;
             if (is24Hour){
@@ -386,7 +464,6 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
             //Draw date in this form: FRI, JAN 22 2017
             SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM dd yyyy", Locale.getDefault());
-
             String currentDate = dateFormat.format(mCalendar.getTime()).toUpperCase();
             canvas.drawText(currentDate, mXOffset - mXPadding, mYOffset + mYPadding, mDayTextPaint);
 
@@ -394,14 +471,18 @@ public class WatchFaceService extends CanvasWatchFaceService {
             float yDividerCoordinates = mYOffset + mYPadding + mYDividerPadding;
             canvas.drawLine(canvas.getWidth()/2 - 30f, yDividerCoordinates, canvas.getWidth()/2 + 30f, yDividerCoordinates, mSeparatorPaint);
 
+            //Draw the min and max temp
             float yTempCoordinates = yDividerCoordinates + (mYPadding * 1.6f);
             if (minTemp != null && maxTemp != null) {
                 canvas.drawText(maxTemp, mXTempOffset, yTempCoordinates, mMaxTempPaint);
                 canvas.drawText(minTemp , mXTempOffset + (mDayTextPaint.getTextSize() * 2.8f), yTempCoordinates, mMinTempPaint);
             }
+            //Draw the bitmap image
             if (imageBitmap != null){
                 canvas.drawBitmap(imageBitmap, mXBitmapOffset, yDividerCoordinates + 15f, null);
             }
+
+            //TODO: add error message/text when image is null
 
         }
 
@@ -437,11 +518,14 @@ public class WatchFaceService extends CanvasWatchFaceService {
             }
         }
 
+        /**
+         * Read the data Items from the Google Api Client and updates the UI with those items
+         * @param dataEventBuffer
+         */
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
             Log.d(TAG, "onDataChanged: inside method");
-
-
+            //loop through each of them and update the UI
             for (DataEvent event: dataEventBuffer){
                 if (event.getType() == DataEvent.TYPE_CHANGED &&
                 event.getDataItem().getUri().getPath().compareTo(WEATHER_WEAR_PATH) == 0){
@@ -452,6 +536,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
             dataEventBuffer.release();
         }
 
+        /**
+         * Update the UI based on the data Items it is being passed
+         * @param dataItem
+         */
         public void updateUIFromDataItems(DataItem dataItem){
             DataMap dataMap = DataMapItem.fromDataItem(dataItem).getDataMap();
             if (imageBitmap != null) {
@@ -465,6 +553,10 @@ public class WatchFaceService extends CanvasWatchFaceService {
 
         }
 
+        /**
+         * add the listeners to the Google Api Client
+         * @param bundle
+         */
         @Override
         public void onConnected(@Nullable Bundle bundle) {
             Wearable.DataApi.addListener(mGoogleApiClient, this);
@@ -484,42 +576,70 @@ public class WatchFaceService extends CanvasWatchFaceService {
             Log.d(TAG, "onConnected: mGoogleApiClient connected");
         }
 
+        /**
+         * Does nothing, just logs it
+         * @param i
+         */
         @Override
         public void onConnectionSuspended(int i) {
             Log.d(TAG, "onConnectionSuspended: mGoogleApiClient connection suspended");
         }
 
+        /**
+         * Does nothing, just logs it
+         * @param connectionResult
+         */
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
             Log.d(TAG, "onConnectionFailed: " + connectionResult.getErrorMessage());
         }
 
+        /**
+         * AsyncTask to load the image in a background tread
+         */
         public class LoadBitmapTask extends AsyncTask<Asset, Void, Bitmap>{
 
+            /**
+             * create a scaled bitmap from the result received
+             * @param bitmap
+             */
             @Override
             protected void onPostExecute(Bitmap bitmap) {
+                //check to see if bitmap is not null
                 if (bitmap != null) {
                     imageBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false) ;
                 }
             }
 
+            /**
+             * loads the bitmap from the data item in the background thread
+             * @param params
+             * @return
+             */
             @Override
             protected Bitmap doInBackground(Asset... params) {
                 if (params.length != 0){
+                    //takes the first parameter which is an asset
                     Asset asset = params[0];
+                    //check to see if the asset is null, if it is return null
+                    //in that case, no need to go through the whole process
                     if (asset == null){
                         Log.d(TAG, "doInBackground: Asset is null");
                         return null;
                     }
 
+                    //reads the assets from the input stream
                     InputStream assetInputStream = Wearable.DataApi
                             .getFdForAsset(mGoogleApiClient, asset).await().getInputStream();
+                    //if asset is corrupted or null return null
                     if (assetInputStream == null){
                         Log.d(TAG, "doInBackground: No image found");
                         return null;
                     }
+                    //return the bitmap if everything is OK
                     return BitmapFactory.decodeStream(assetInputStream);
                 }
+                //return null if no parameters were passed
                 return null;
             }
         }
